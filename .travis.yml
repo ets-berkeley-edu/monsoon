@@ -1,0 +1,16 @@
+dist: jammy
+sudo: required
+language: python
+python: "3.11"
+
+before_install:
+  - cd ${TRAVIS_BUILD_DIR}
+  - nvm install 20
+
+install:
+  - npm install
+  - pip3 install tox
+
+script:
+  - pip3 install -r requirements.txt
+  - tox --parallel || travis_terminate 1
