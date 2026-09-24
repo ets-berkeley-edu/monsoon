@@ -22,17 +22,13 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE MAINTENANCE, SUPPORT, UPDATES,
 ENHANCEMENTS, OR MODIFICATIONS.
 """
-import os
+from datetime import datetime
 
-# Base directory for the application (one level up from this config file).
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+from monsoon import db
 
-INDEX_HTML = f'{BASE_DIR}/tests/static/test-index.html'
 
-LOGGING_LOCATION = 'STDOUT'
+class Base(db.Model):
+    __abstract__ = True
 
-SQLALCHEMY_DATABASE_URI = 'postgresql://monsoon:monsoon@localhost:5432/monsoon_test'
-
-TENANT_BASE_DOMAIN = 'monsoon-test.example.com'
-
-TESTING = True
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)

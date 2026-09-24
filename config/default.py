@@ -24,6 +24,10 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 import logging
+import os
+
+# Base directory for the application (one level up from this config file).
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
 # Minutes of inactivity before session cookie is destroyed.
 INACTIVE_SESSION_LIFETIME = 120
@@ -39,6 +43,9 @@ LOGGING_PROPAGATION_LEVEL = logging.WARN
 
 # Used to encrypt session cookie.
 SECRET_KEY = 'secret'
+
+# Override in local configs for a real deployment.
+SQLALCHEMY_DATABASE_URI = 'postgresql://monsoon:monsoon@localhost:5432/monsoon'
 
 # A request's Host header is expected to look like "<tenant-slug>.<TENANT_BASE_DOMAIN>".
 # None disables tenant resolution (every request is treated as tenant-less).
