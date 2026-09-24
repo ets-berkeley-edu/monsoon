@@ -24,7 +24,8 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 import datetime
 
-from flask import make_response, redirect, request, session
+from flask import g, make_response, redirect, request, session
+from monsoon.lib.tenants import resolve_tenant_slug
 from werkzeug.exceptions import HTTPException
 
 
@@ -48,8 +49,14 @@ def register_routes(app):
     @app.route('/', defaults={'path': ''})
     @app.route('/<path:path>', methods=['GET', 'POST', 'PUT'])
     def front_end_route(**kwargs):
-        vue_base_url = app.config['VUE_LOCALHOST_BASE_URL']
-        return redirect(vue_base_url + request.full_path) if vue_base_url else make_response(index_html)
+        vue_port = app.config['VUE_LOCALHOST_PORT']
+        if vue_port:
+            # Redirect to the Vite dev server on the requesting host, preserving whatever
+            # tenant subdomain (if any) the request came in on.
+            hostname = request.host.split(':')[0]
+            vue_base_url = f'{request.scheme}://{hostname}:{vue_port}'
+            return redirect(vue_base_url + request.full_path)
+        return make_response(index_html)
 
     @app.errorhandler(Exception)
     def handle_exception(e):
@@ -60,6 +67,7 @@ def register_routes(app):
 
     @app.before_request
     def before_request():
+        g.tenant_slug = resolve_tenant_slug(request.host, app.config['TENANT_BASE_DOMAIN'])
         session.permanent = True
         app.permanent_session_lifetime = datetime.timedelta(minutes=app.config['INACTIVE_SESSION_LIFETIME'])
         session.modified = True
@@ -67,11 +75,14 @@ def register_routes(app):
     @app.after_request
     def after_request(response):
         if app.config['MONSOON_ENV'] == 'development':
-            # In development the response can be shared with requesting code from any local origin.
-            response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
-            response.headers['Access-Control-Allow-Origin'] = app.config['VUE_LOCALHOST_BASE_URL']
-            response.headers['Access-Control-Allow-Credentials'] = 'true'
-            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, PUT, DELETE'
+            # In development the front end runs on its own (per-tenant-subdomain) origin; reflect
+            # it back rather than a fixed value.
+            origin = request.headers.get('Origin')
+            if origin:
+                response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+                response.headers['Access-Control-Allow-Origin'] = origin
+                response.headers['Access-Control-Allow-Credentials'] = 'true'
+                response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, PUT, DELETE'
         if request.full_path.startswith('/api'):
             forwarded_for = request.headers.get('X-Forwarded-For')
             forwarded_for = forwarded_for.split(',')[0] if forwarded_for else None

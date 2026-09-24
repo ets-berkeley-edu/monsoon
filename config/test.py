@@ -31,4 +31,6 @@ INDEX_HTML = f'{BASE_DIR}/tests/static/test-index.html'
 
 LOGGING_LOCATION = 'STDOUT'
 
+TENANT_BASE_DOMAIN = 'monsoon-test.example.com'
+
 TESTING = True

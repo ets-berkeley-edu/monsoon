@@ -19,6 +19,12 @@
         >
           Backend environment: <strong>{{ config.monsoonEnv }}</strong>
         </p>
+        <p
+          v-if="config.tenantSlug"
+          class="text-body-2 text-medium-emphasis"
+        >
+          Tenant: <strong>{{ config.tenantSlug }}</strong>
+        </p>
       </v-col>
     </v-row>
   </v-container>

@@ -22,29 +22,23 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE MAINTENANCE, SUPPORT, UPDATES,
 ENHANCEMENTS, OR MODIFICATIONS.
 """
-from collections import OrderedDict
-
-from flask import current_app as app, g
-from monsoon import __version__ as version
-from monsoon.lib.http import tolerant_jsonify
-
-PUBLIC_CONFIGS = [
-    'MONSOON_ENV',
-    'TIMEZONE',
-]
 
 
-@app.route('/api/config')
-def app_config():
-    def _to_api_key(key):
-        chunks = key.split('_')
-        return f"{chunks[0].lower()}{''.join(chunk.title() for chunk in chunks[1:])}"
+def resolve_tenant_slug(host, base_domain):
+    """Extract a tenant slug from a request's Host header.
 
-    api_json = dict((_to_api_key(key), app.config[key]) for key in PUBLIC_CONFIGS)
-    api_json['tenantSlug'] = g.get('tenant_slug')
-    return tolerant_jsonify(OrderedDict(sorted(api_json.items())))
+    `host` is expected to look like `<slug>.<base_domain>`, with or without a trailing
+    `:<port>` (e.g. `pahma.lvh.me:8080` in local development, `pahma.webapps.cspace.berkeley.edu`
+    in production). Returns None if `base_domain` isn't configured, or if `host` is the bare
+    apex domain or doesn't match it at all (an unrecognized host).
 
-
-@app.route('/api/version')
-def app_version():
-    return tolerant_jsonify({'version': version})
+    This same function runs unchanged in every environment; only the configured
+    `base_domain` differs (see TENANT_BASE_DOMAIN in config/*.py).
+    """
+    if not base_domain:
+        return None
+    hostname = host.split(':')[0].lower()
+    suffix = f'.{base_domain.lower()}'
+    if hostname.endswith(suffix) and len(hostname) > len(suffix):
+        return hostname[:-len(suffix)]
+    return None

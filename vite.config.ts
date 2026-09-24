@@ -41,6 +41,9 @@ export default defineConfig({
     ]
   },
   server: {
+    // A leading '.' matches the domain and all of its subdomains, e.g. "pahma.localhost". See
+    // the "Working with tenants locally" section of README.md.
+    allowedHosts: ['.localhost'],
     port: 8080
   }
 })
