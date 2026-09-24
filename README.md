@@ -32,6 +32,26 @@ nvm use
 npm install
 ```
 
+## Database
+
+### Create Postgres user and databases
+
+```
+createuser monsoon --no-createdb --no-superuser --no-createrole --pwprompt
+createdb monsoon --owner=monsoon
+createdb monsoon_test --owner=monsoon
+
+# Load schema and seed the five known tenants
+export FLASK_APP=application.py
+flask initdb
+```
+
+`flask initdb` seeds the `tenants` table with the same five museums in every environment —
+see the "Working with tenants locally" section below. Changes to an already-deployed
+database (production) go through a hand-applied SQL file under `scripts/db/migrate/`, not
+through `flask initdb` — see `scripts/db/schema.sql` for the current cumulative schema and
+`scripts/db/migrate/2026/20260924-MON-6/` for an example.
+
 ## Run the app
 
 ```
@@ -67,6 +87,10 @@ an apex-domain request in production.
 
 This is configured via `TENANT_BASE_DOMAIN` in `config/development.py`; nothing about the
 resolution code itself differs between development and production, only that config value.
+
+Only the five tenants seeded by `flask initdb` (bampfa, botgarden, cinefiles, pahma, ucjeps)
+are recognized — a subdomain that doesn't match a row in the `tenants` table (e.g.
+`nope.localhost:8080`) gets a 404, regardless of environment.
 
 ## Run tests, lint the code
 

@@ -25,6 +25,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 import datetime
 
 from flask import g, make_response, redirect, request, session
+from monsoon.api.errors import ResourceNotFoundError
 from monsoon.lib.tenants import resolve_tenant_slug
 from werkzeug.exceptions import HTTPException
 
@@ -68,6 +69,7 @@ def register_routes(app):
     @app.before_request
     def before_request():
         g.tenant_slug = resolve_tenant_slug(request.host, app.config['TENANT_BASE_DOMAIN'])
+        _reject_unrecognized_tenant(g.tenant_slug)
         session.permanent = True
         app.permanent_session_lifetime = datetime.timedelta(minutes=app.config['INACTIVE_SESSION_LIFETIME'])
         session.modified = True
@@ -100,3 +102,14 @@ def register_routes(app):
             else:
                 app.logger.info(log_message)
         return response
+
+
+def _reject_unrecognized_tenant(tenant_slug):
+    """Reject a resolved tenant slug that doesn't match a row in the tenants table, with a 404.
+
+    A missing slug (no subdomain at all) is not rejected here -- that's a separate, valid case.
+    """
+    from monsoon.models.tenant import Tenant
+
+    if tenant_slug and not Tenant.find_by_slug(tenant_slug):
+        raise ResourceNotFoundError(f'Unrecognized tenant: {tenant_slug}')

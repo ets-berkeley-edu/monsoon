@@ -51,6 +51,13 @@ if __name__.startswith('_mod_wsgi'):
 
 application = create_app()
 
+
+@application.cli.command()
+def initdb():
+    from monsoon.models import development_db
+    development_db.load()
+
+
 host = application.config['HOST']
 port = application.config['PORT']
 

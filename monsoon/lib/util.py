@@ -22,17 +22,8 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE MAINTENANCE, SUPPORT, UPDATES,
 ENHANCEMENTS, OR MODIFICATIONS.
 """
-import os
+from datetime import UTC
 
-# Base directory for the application (one level up from this config file).
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
-INDEX_HTML = f'{BASE_DIR}/tests/static/test-index.html'
-
-LOGGING_LOCATION = 'STDOUT'
-
-SQLALCHEMY_DATABASE_URI = 'postgresql://monsoon:monsoon@localhost:5432/monsoon_test'
-
-TENANT_BASE_DOMAIN = 'monsoon-test.example.com'
-
-TESTING = True
+def to_isoformat(value):
+    return value and value.astimezone(UTC).isoformat()

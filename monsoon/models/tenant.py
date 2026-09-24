@@ -22,17 +22,42 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE MAINTENANCE, SUPPORT, UPDATES,
 ENHANCEMENTS, OR MODIFICATIONS.
 """
-import os
+from monsoon import db, std_commit
+from monsoon.lib.util import to_isoformat
+from monsoon.models.base import Base
 
-# Base directory for the application (one level up from this config file).
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
-INDEX_HTML = f'{BASE_DIR}/tests/static/test-index.html'
+class Tenant(Base):
+    __tablename__ = 'tenants'
 
-LOGGING_LOCATION = 'STDOUT'
+    id = db.Column(db.Integer, nullable=False, primary_key=True)
+    slug = db.Column(db.String(80), nullable=False, unique=True)
+    name = db.Column(db.String(255), nullable=False)
 
-SQLALCHEMY_DATABASE_URI = 'postgresql://monsoon:monsoon@localhost:5432/monsoon_test'
+    def __init__(self, slug, name):
+        self.slug = slug
+        self.name = name
 
-TENANT_BASE_DOMAIN = 'monsoon-test.example.com'
+    @classmethod
+    def create(cls, slug, name):
+        tenant = cls(slug=slug, name=name)
+        db.session.add(tenant)
+        std_commit()
+        return tenant
 
-TESTING = True
+    @classmethod
+    def find_by_slug(cls, slug):
+        return cls.query.filter_by(slug=slug).first()
+
+    @classmethod
+    def get_all(cls):
+        return cls.query.order_by(cls.slug).all()
+
+    def to_api_json(self):
+        return {
+            'id': self.id,
+            'slug': self.slug,
+            'name': self.name,
+            'createdAt': to_isoformat(self.created_at),
+            'updatedAt': to_isoformat(self.updated_at),
+        }

@@ -24,6 +24,7 @@ ENHANCEMENTS, OR MODIFICATIONS.
 """
 
 from flask import Flask
+from monsoon import db
 from monsoon.configs import load_configs
 from monsoon.logger import initialize_logger
 from monsoon.routes import register_routes
@@ -34,6 +35,7 @@ def create_app():
     app = Flask(__name__.split('.')[0])
     load_configs(app)
     initialize_logger(app)
+    db.init_app(app)
 
     with app.app_context():
         register_routes(app)

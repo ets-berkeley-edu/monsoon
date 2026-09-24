@@ -52,6 +52,11 @@ class TestConfigController:
         assert response.status_code == 200
         assert response.json['tenantSlug'] is None
 
+    def test_unrecognized_tenant_returns_404(self, client):
+        """A subdomain that doesn't match any row in the tenants table is rejected outright."""
+        response = client.get('/api/config', headers={'Host': 'not-a-real-tenant.monsoon-test.example.com'})
+        assert response.status_code == 404
+
 
 class TestVersion:
     """Application version API."""
