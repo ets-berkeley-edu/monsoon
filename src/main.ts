@@ -1,6 +1,7 @@
 import App from './App.vue'
 import axios from 'axios'
 import router from '@/router'
+import {apiBaseUrl} from '@/utils'
 import {createApp} from 'vue'
 import {registerPlugins} from '@/plugins'
 import {useContextStore} from '@/stores/context'
@@ -9,12 +10,12 @@ const app = createApp(App)
 
 registerPlugins(app)
 
-const apiBaseUrl = import.meta.env.VITE_APP_API_BASE_URL
+const baseUrl = apiBaseUrl()
 
-axios.get(`${apiBaseUrl}/api/config`).then(({data}) => {
+axios.get(`${baseUrl}/api/config`).then(({data}) => {
   useContextStore().setConfig({
     ...data,
-    apiBaseUrl
+    apiBaseUrl: baseUrl
   })
   app.use(router)
   app.mount('#app')

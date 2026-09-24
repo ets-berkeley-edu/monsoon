@@ -34,10 +34,23 @@ class TestConfigController:
         api_json = response.json
         assert api_json['monsoonEnv'] == 'test'
         assert api_json['timezone'] == 'America/Los_Angeles'
+        assert api_json['tenantSlug'] is None
 
         api_json_lower_string = str(api_json).lower()
         for keyword in ('password', 'secret'):
             assert keyword not in api_json_lower_string
+
+    def test_tenant_slug_resolved_from_host(self, client):
+        """The tenant slug is resolved from the request's Host header."""
+        response = client.get('/api/config', headers={'Host': 'pahma.monsoon-test.example.com'})
+        assert response.status_code == 200
+        assert response.json['tenantSlug'] == 'pahma'
+
+    def test_tenant_slug_missing_for_apex_domain(self, client):
+        """A request for the bare base domain (no subdomain) has no tenant."""
+        response = client.get('/api/config', headers={'Host': 'monsoon-test.example.com'})
+        assert response.status_code == 200
+        assert response.json['tenantSlug'] is None
 
 
 class TestVersion:

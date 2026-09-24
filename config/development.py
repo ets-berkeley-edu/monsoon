@@ -28,4 +28,10 @@ DEBUG = True
 
 INDEX_HTML = 'index.html'
 
-VUE_LOCALHOST_BASE_URL = 'http://localhost:8080'
+# Per RFC 6761, "localhost" and all of its subdomains resolve to the loopback address, and
+# browsers honor that natively, so "<slug>.localhost" works as a stand-in tenant subdomain
+# with no /etc/hosts editing or external DNS dependency. See the "Working with tenants
+# locally" section of README.md.
+TENANT_BASE_DOMAIN = 'localhost'
+
+VUE_LOCALHOST_PORT = 8080

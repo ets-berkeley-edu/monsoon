@@ -3,6 +3,7 @@ import {defineStore} from 'pinia'
 export type MonsoonConfig = {
   apiBaseUrl?: string,
   monsoonEnv?: string,
+  tenantSlug?: string | null,
   timezone?: string
 }
 
