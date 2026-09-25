@@ -12,5 +12,10 @@ install:
   - pip3 install tox
 
 script:
+  - psql -c 'create database monsoon_test;' -U postgres
+  - psql monsoon_test -c 'create role monsoon superuser login; alter schema public owner to monsoon;' -U postgres
   - pip3 install -r requirements.txt
   - tox --parallel || travis_terminate 1
+
+services:
+  - postgresql
