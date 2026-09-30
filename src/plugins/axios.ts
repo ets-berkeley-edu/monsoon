@@ -8,7 +8,8 @@ interface AxiosOptions {
 export default {
   install: (app: App, options: AxiosOptions) => {
     app.config.globalProperties.$axios = axios.create({
-      baseURL: options.baseUrl
+      baseURL: options.baseUrl,
+      withCredentials: true
     })
   }
 }

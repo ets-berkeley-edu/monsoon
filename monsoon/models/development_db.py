@@ -28,14 +28,19 @@ from monsoon.models.tenant import Tenant
 from sqlalchemy import text
 
 # The known museum tenants -- see the "Working with tenants locally" section of README.md.
-# Kept in sync with scripts/db/migrate/2026/20260924-MON-6/create_tenants_table.sql (the
-# production migration) and tests/fixtures/tenants.sql (the test fixture); all three are
-# expected to define the same five tenants.
+# Kept in sync with scripts/db/migrate/2026/20260924-MON-6/create_tenants_table.sql,
+# scripts/db/migrate/2026/20260930-MON-11/rename_botgarden_to_ucbg.sql (the production
+# migrations), and tests/fixtures/tenants.sql (the test fixture); all are expected to define
+# the same five tenants. Each tenant's CollectionSpace instance URL is constructed dynamically
+# (slug + COLLECTIONSPACE_BASE_DOMAIN) rather than stored -- see
+# monsoon/externals/collectionspace.py. Slugs are chosen to match CollectionSpace's own tenant
+# identifiers exactly (unlike the legacy cspace-webapps-common names) -- "ucbg" here is
+# "botgarden" (UC Botanical Garden) in the legacy implementation.
 TENANTS = [
     ('bampfa', 'Berkeley Art Museum and Pacific Film Archive'),
-    ('botgarden', 'UC Botanical Garden'),
     ('cinefiles', 'CineFiles'),
     ('pahma', 'Phoebe A. Hearst Museum of Anthropology'),
+    ('ucbg', 'UC Botanical Garden'),
     ('ucjeps', 'University and Jepson Herbaria'),
 ]
 

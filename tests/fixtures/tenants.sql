@@ -1,10 +1,12 @@
 -- The same five tenants seeded in development (monsoon/models/development_db.py) and
--- production (scripts/db/migrate/2026/20260924-MON-6/create_tenants_table.sql).
+-- production (scripts/db/migrate/2026/20260924-MON-6/create_tenants_table.sql,
+-- scripts/db/migrate/2026/20260930-MON-11/rename_botgarden_to_ucbg.sql). "ucbg" is "botgarden"
+-- (UC Botanical Garden) in the legacy cspace-webapps-common implementation.
 
 INSERT INTO tenants (slug, name, created_at, updated_at)
 VALUES
     ('bampfa', 'Berkeley Art Museum and Pacific Film Archive', now(), now()),
-    ('botgarden', 'UC Botanical Garden', now(), now()),
     ('cinefiles', 'CineFiles', now(), now()),
     ('pahma', 'Phoebe A. Hearst Museum of Anthropology', now(), now()),
+    ('ucbg', 'UC Botanical Garden', now(), now()),
     ('ucjeps', 'University and Jepson Herbaria', now(), now());

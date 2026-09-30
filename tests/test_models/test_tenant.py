@@ -30,7 +30,7 @@ class TestTenant:
 
     def test_get_all(self, db_session):
         slugs = [tenant.slug for tenant in Tenant.get_all()]
-        assert slugs == ['bampfa', 'botgarden', 'cinefiles', 'pahma', 'ucjeps']
+        assert slugs == ['bampfa', 'cinefiles', 'pahma', 'ucbg', 'ucjeps']
 
     def test_find_by_slug(self, db_session):
         tenant = Tenant.find_by_slug('pahma')

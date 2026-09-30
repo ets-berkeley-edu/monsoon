@@ -33,6 +33,7 @@ from werkzeug.exceptions import HTTPException
 def register_routes(app):
     """Register app routes."""
     # Register API routes.
+    import monsoon.api.auth_controller
     import monsoon.api.config_controller
 
     # Register error handlers.

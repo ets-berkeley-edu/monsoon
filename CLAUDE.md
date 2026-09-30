@@ -7,14 +7,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Monsoon is a from-scratch reimplementation of
 [cspace-webapps-common](https://github.com/ets-berkeley-edu/cspace-webapps-common), the
 multi-tenant Django framework that powers UC Berkeley's CollectionSpace (CSpace) museum web
-apps (bampfa, botgarden, cinefiles, pahma, ucjeps). The stack is being rebuilt as Flask +
+apps (bampfa, cinefiles, pahma, ucbg, ucjeps -- `ucbg` is `botgarden` in the legacy
+implementation; see "Multi-tenancy" below). The stack is being rebuilt as Flask +
 Vue.js, single codebase / single deployment serving all tenants (replacing the old model of a
 separate physical Django project per tenant).
 
-There is intentionally **no CalNet integration and no `authorized_users` table**. Monsoon will
-pass credentials through to CollectionSpace itself rather than handling
-authentication/authorization independently — don't add a local auth/session-user model without
-checking this against the actual plan first.
+There is intentionally **no CalNet integration and no `authorized_users` table**. A "login" is
+just a CollectionSpace username/password, verified directly against the current tenant's own
+CollectionSpace instance (`monsoon/externals/collectionspace.py`) — Monsoon has no independent
+accounts of its own. Don't add a local auth/session-user model without checking this against
+the actual plan first.
 
 Much of this codebase's conventions (app factory, config layering, error handling, the
 SQLAlchemy/`std_commit` pattern, no-Alembic schema approach) are deliberately modeled on the
@@ -36,6 +38,9 @@ createdb monsoon --owner=monsoon
 createdb monsoon_test --owner=monsoon
 export FLASK_APP=application.py
 flask initdb   # loads scripts/db/schema.sql and seeds the five tenants
+
+# Redis (one-time, local dev; optional -- tests use a fake in-memory client instead)
+brew install redis && redis-server
 ```
 
 ### Run
@@ -116,13 +121,52 @@ loopback). The pieces:
   `tenants` table — but does *not* reject a request with no subdomain at all (that's a
   separate, valid "no tenant" case). Don't conflate the two when touching this logic.
 - The `tenants` table (`monsoon/models/tenant.py`) is the single source of truth for which
-  slugs are valid, seeded identically (five real museums: bampfa, botgarden, cinefiles, pahma,
+  slugs are valid, seeded identically (five real museums: bampfa, cinefiles, pahma, ucbg,
   ucjeps) in every environment via three independent mechanisms that should be kept in sync by
-  hand: `scripts/db/migrate/2026/20260924-MON-6/create_tenants_table.sql` (production, applied
-  by hand via `psql`), `tests/fixtures/tenants.sql` (loaded by the test suite), and
-  `monsoon/models/development_db.py` (ORM-based, run locally via `flask initdb`).
+  hand: `scripts/db/migrate/2026/` (production, applied by hand via `psql` -- `20260924-MON-6`
+  creates and seeds the table), `tests/fixtures/tenants.sql`
+  (loaded by the test suite), and `monsoon/models/development_db.py` (ORM-based, run locally via
+  `flask initdb`). Slugs are chosen to match CollectionSpace's own tenant identifiers exactly
+  (see "Authentication" below) rather than the legacy cspace-webapps-common names -- `ucbg` was
+  `botgarden` there.
 - `/api/config` (`monsoon/api/config_controller.py`) exposes the resolved `tenantSlug`
   alongside static app config; the frontend reads it via Pinia (`src/stores/context.ts`).
+
+### Authentication (CollectionSpace pass-through, via Redis)
+Logging in makes one real call to the current tenant's CollectionSpace instance (`GET
+/accounts/0/accountperms` -- csid "0" is a deliberate CollectionSpace sentinel that always
+resolves to "whichever account is currently authenticated", so a clean response is itself the
+proof of a valid login). There is no independent Monsoon account. The pieces, split the same
+way Ripley splits `externals/canvas.py`/`externals/mailgun.py` from its route/lib layers:
+
+- `monsoon/externals/collectionspace.py` -- `instance_url_for_slug()` builds a tenant's
+  CollectionSpace instance URL on the fly from its slug plus `COLLECTIONSPACE_BASE_DOMAIN`
+  (`qa.collectionspace.org` by default -- the same tier for local dev and dev/qa deployments;
+  production overrides to `collectionspace.org` via local config). Nothing is stored on the
+  `tenants` table for this -- it works with no per-tenant exceptions because our tenant slugs
+  are chosen to match CollectionSpace's own tenant identifiers exactly (see "Multi-tenancy"
+  above). `verify_login()` is the actual outbound HTTP call, via `monsoon/lib/http.py:request()`
+  (a truthy-success/falsy-failure wrapper, mirroring Ripley's).
+- `monsoon/externals/redis.py` -- connection handling (`REDIS_USE_FAKE_CLIENT` swaps in
+  `fakeredis` for tests, same pattern as Ripley) plus generic TTL'd JSON storage
+  (`store_json`/`fetch_json`/`touch_key`/`delete_key`). Not CollectionSpace-specific.
+- `monsoon/lib/auth.py` -- `create_session()`/`current_session()`/`destroy_session()` and a
+  `login_required` decorator. The credential (username, password, instance URL) is stored in
+  Redis under a random per-login token with a TTL; the Flask session cookie holds only that
+  token plus the username (for display) -- never the credential itself. `current_session()`
+  slides the TTL forward on every call, matching the cookie's own inactivity-based expiry.
+- `monsoon/api/auth_controller.py` -- the thin `/api/auth/login`, `/logout`, `/status`
+  endpoints tying the above together. Login requires a resolved tenant (`g.tenant_slug`) --
+  the CollectionSpace instance URL is derived from that slug, never taken from user input.
+
+Storing the credential in Redis rather than AWS Secrets Manager was a deliberate choice: Redis
+gives native per-key TTL (Secrets Manager has none -- an abandoned browser session would
+otherwise never get cleaned up), lower latency, and flat cost regardless of call volume, for a
+credential that's fetched fresh on every request rather than cached. See
+`docs/redis-vs-secrets-manager.md` for the full writeup of that trade-off. The value stored is
+plain structured fields (username/password/instance_url/verify_ssl), not a pre-encoded HTTP
+Basic Auth header -- base64 isn't encryption, and structured fields keep the username usable on
+its own and keep log/secret redaction simple.
 
 ### Database: no migration framework
 No Alembic/Flask-Migrate, matching `ripley`. `scripts/db/schema.sql` (+ mirror-image
