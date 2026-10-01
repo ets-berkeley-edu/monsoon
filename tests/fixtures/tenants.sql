@@ -1,7 +1,6 @@
 -- The same five tenants seeded in development (monsoon/models/development_db.py) and
--- production (scripts/db/migrate/2026/20260924-MON-6/create_tenants_table.sql,
--- scripts/db/migrate/2026/20260930-MON-11/rename_botgarden_to_ucbg.sql). "ucbg" is "botgarden"
--- (UC Botanical Garden) in the legacy cspace-webapps-common implementation.
+-- production (scripts/db/migrate/2026/20260924-MON-6/create_tenants_table.sql). "ucbg" is
+-- "botgarden" (UC Botanical Garden) in the legacy cspace-webapps-common implementation.
 
 INSERT INTO tenants (slug, name, created_at, updated_at)
 VALUES

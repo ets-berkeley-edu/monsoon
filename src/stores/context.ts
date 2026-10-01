@@ -1,7 +1,13 @@
 import {defineStore} from 'pinia'
 
+export type Tool = {
+  key: string,
+  name: string
+}
+
 export type MonsoonConfig = {
   apiBaseUrl?: string,
+  availableTools?: Tool[],
   monsoonEnv?: string,
   tenantSlug?: string | null,
   timezone?: string

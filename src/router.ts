@@ -1,4 +1,5 @@
 import {createRouter, createWebHistory} from 'vue-router'
+import {requiresTool} from '@/lib/auth'
 
 const routes = [
   {
@@ -9,6 +10,12 @@ const routes = [
         path: '',
         name: 'Home',
         component: () => import('@/views/Home.vue')
+      },
+      {
+        path: '/tools/bulk-media-uploader',
+        name: 'BulkMediaUploader',
+        component: () => import('@/views/BulkMediaUploader.vue'),
+        beforeEnter: requiresTool('bulk_media_uploader')
       },
       {
         path: '/:pathMatch(.*)*',

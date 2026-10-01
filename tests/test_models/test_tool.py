@@ -22,37 +22,23 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE MAINTENANCE, SUPPORT, UPDATES,
 ENHANCEMENTS, OR MODIFICATIONS.
 """
-from collections import OrderedDict
-
-from flask import current_app as app, g
-from monsoon import __version__ as version
-from monsoon.lib.http import tolerant_jsonify
 from monsoon.models.tenant import Tenant
 from monsoon.models.tool import Tool
 
-PUBLIC_CONFIGS = [
-    'MONSOON_ENV',
-    'TIMEZONE',
-]
 
+class TestTool:
+    """The tools fixture (tests/fixtures/tools.sql) grants bulk_media_uploader to all five tenants."""
 
-@app.route('/api/config')
-def app_config():
-    def _to_api_key(key):
-        chunks = key.split('_')
-        return f"{chunks[0].lower()}{''.join(chunk.title() for chunk in chunks[1:])}"
+    def test_available_for_tenant(self, db_session):
+        tenant = Tenant.find_by_slug('pahma')
+        keys = [tool.key for tool in Tool.available_for_tenant(tenant.id)]
+        assert keys == ['bulk_media_uploader']
 
-    api_json = dict((_to_api_key(key), app.config[key]) for key in PUBLIC_CONFIGS)
-    api_json['tenantSlug'] = g.get('tenant_slug')
-    api_json['availableTools'] = [tool.to_api_json() for tool in _available_tools(g.get('tenant_slug'))]
-    return tolerant_jsonify(OrderedDict(sorted(api_json.items())))
+    def test_available_for_tenant_with_no_tools(self, db_session):
+        unrelated_tenant_id = 999999
+        assert Tool.available_for_tenant(unrelated_tenant_id) == []
 
-
-def _available_tools(tenant_slug):
-    tenant = tenant_slug and Tenant.find_by_slug(tenant_slug)
-    return Tool.available_for_tenant(tenant.id) if tenant else []
-
-
-@app.route('/api/version')
-def app_version():
-    return tolerant_jsonify({'version': version})
+    def test_to_api_json(self, db_session):
+        tenant = Tenant.find_by_slug('bampfa')
+        tool = Tool.available_for_tenant(tenant.id)[0]
+        assert tool.to_api_json() == {'key': 'bulk_media_uploader', 'name': 'Bulk Media Uploader'}

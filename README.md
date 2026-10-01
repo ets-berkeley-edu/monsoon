@@ -134,6 +134,17 @@ this lives: the credential is stored in Redis under a random per-login token (wi
 matching `INACTIVE_SESSION_LIFETIME`), and only that token — never the credential — goes in the
 Flask session cookie. Logging out deletes the Redis key immediately.
 
+## Tools
+
+Once logged in, the home page lists whatever tools the current tenant has access to — for now,
+just the Bulk Media Uploader, available to all five tenants. Which tenants can reach which
+tools is a database manifest (the `tools` and `tenant_tools` tables, `monsoon/models/tool.py`),
+not a code change — see `flask initdb`'s seed data in `monsoon/models/development_db.py` for the
+current grants. A tool with no grant for the current tenant is both hidden from that list and
+rejected if its route is visited directly. The account menu (logged-in username, with a log-out
+option) lives in the app bar's upper right and persists across tool pages; clicking "Monsoon" at
+upper left always returns to the tenant's home page.
+
 ## Run tests, lint the code
 
 We use [Tox](https://tox.readthedocs.io) for continuous integration.

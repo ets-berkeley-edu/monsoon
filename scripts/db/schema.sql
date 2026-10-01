@@ -22,10 +22,10 @@
 -- ENHANCEMENTS, OR MODIFICATIONS.
 
 -- This file is the canonical, cumulative schema for a fresh database (local dev or test). It is
--- run wholesale by `flask initdb` / the pytest `db` fixture, and does not seed any tenant rows
--- itself -- see scripts/db/development_seed.py (dev) and tests/fixtures/tenants.sql (test) for
--- that. Changes to an already-deployed database go through scripts/db/migrate/, applied by
--- hand; this file should be kept in sync to reflect the cumulative result of those migrations.
+-- run wholesale by `flask initdb` / the pytest `db` fixture, and does not seed any rows itself --
+-- see monsoon/models/development_db.py (dev) and tests/fixtures/ (test) for that. Changes to an
+-- already-deployed database go through scripts/db/migrate/, applied by hand; this file should be
+-- kept in sync to reflect the cumulative result of those migrations.
 
 CREATE TABLE tenants (
     id SERIAL PRIMARY KEY,
@@ -33,4 +33,20 @@ CREATE TABLE tenants (
     name VARCHAR(255) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT now(),
     updated_at TIMESTAMP NOT NULL DEFAULT now()
+);
+
+-- A tool is a self-contained feature of the app (its own Vue route/view). tenant_tools is the
+-- manifest of which tenants can reach which tools.
+CREATE TABLE tools (
+    id SERIAL PRIMARY KEY,
+    key VARCHAR(80) NOT NULL UNIQUE,
+    name VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP NOT NULL DEFAULT now()
+);
+
+CREATE TABLE tenant_tools (
+    tenant_id INTEGER NOT NULL REFERENCES tenants(id),
+    tool_id INTEGER NOT NULL REFERENCES tools(id),
+    PRIMARY KEY (tenant_id, tool_id)
 );

@@ -168,6 +168,31 @@ plain structured fields (username/password/instance_url/verify_ssl), not a pre-e
 Basic Auth header -- base64 isn't encryption, and structured fields keep the username usable on
 its own and keep log/secret redaction simple.
 
+### Tools manifest
+A "tool" is a self-contained feature with its own Vue route/view (the first is the Bulk Media
+Uploader); which tenants can reach which tools is data, not code, so granting a tenant a new
+tool is a database change, not a deploy.
+
+- `monsoon/models/tool.py` -- `Tool` (the `tools` table: `key`/`name`) plus `tenant_tools`, a
+  plain `db.Table` many-to-many association with no attributes of its own (the grant *is* the
+  data). `Tool.available_for_tenant(tenant_id)` is the one query every other piece goes through.
+  Seeded the same way as `tenants` -- `scripts/db/migrate/2026/20261001-MON-12/` (production),
+  `tests/fixtures/tools.sql` (test), `monsoon/models/development_db.py`'s `TOOLS` list (dev via
+  `flask initdb`).
+- `/api/config` includes `availableTools` (an array of `{key, name}`) for the resolved tenant,
+  alongside `tenantSlug` -- this is tenant-scoped data, not session-scoped, so it's available
+  whether or not anyone's logged in; only the frontend's tool list gates display on being logged in.
+- Frontend: `src/lib/tools.ts`'s `TOOL_REGISTRY` is a static map from a tool's backend `key` to
+  the Vue route name and `mdi-*` icon that render it -- the backend only knows which tenants get
+  which tools, not how the frontend routes to or illustrates them. `Home.vue` renders
+  `config.availableTools` filtered against that map as the logged-in tenant's tool list (so an
+  unmapped key is silently skipped rather than breaking the list); a logged-out tenant sees the
+  login form in that same spot instead. `src/lib/auth.ts:requiresTool(toolKey)` is a per-route
+  `beforeEnter` guard (same shape as Ripley's `src/lib/auth.ts`) checking both that someone's
+  logged in and that the current tenant's `availableTools` includes that key; see its use on the
+  `BulkMediaUploader` route in
+  `src/router.ts`.
+
 ### Database: no migration framework
 No Alembic/Flask-Migrate, matching `ripley`. `scripts/db/schema.sql` (+ mirror-image
 `drop_schema.sql`) is the canonical, cumulative DDL for a fresh database — run wholesale by
