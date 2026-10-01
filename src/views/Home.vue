@@ -28,17 +28,18 @@
 
         <v-card v-if="contextStore.config.tenantSlug" class="mt-8 mx-auto text-left" max-width="360">
           <v-card-text v-if="contextStore.currentUser.username">
-            <p class="mb-4">
-              Logged in to CollectionSpace as <strong>{{ contextStore.currentUser.username }}</strong>.
-            </p>
-            <v-btn
-              color="primary"
-              variant="tonal"
-              :loading="loading"
-              @click="handleLogout"
-            >
-              Log out
-            </v-btn>
+            <v-list density="compact" :lines="false">
+              <v-list-item
+                v-for="tool in availableTools"
+                :key="tool.key"
+                :title="tool.name"
+                :to="{name: tool.routeName}"
+              >
+                <template #prepend>
+                  <v-icon :icon="tool.icon" />
+                </template>
+              </v-list-item>
+            </v-list>
           </v-card-text>
           <v-card-text v-else>
             <v-form @submit.prevent="handleLogin">
@@ -78,8 +79,9 @@
 </template>
 
 <script lang="ts" setup>
-import {login, logout} from '@/api/auth'
-import {ref} from 'vue'
+import {computed, ref} from 'vue'
+import {TOOL_REGISTRY} from '@/lib/tools'
+import {login} from '@/api/auth'
 import {useContextStore} from '@/stores/context'
 
 const contextStore = useContextStore()
@@ -88,6 +90,12 @@ const username = ref('')
 const password = ref('')
 const error = ref('')
 const loading = ref(false)
+
+const availableTools = computed(() => {
+  return (contextStore.config.availableTools || [])
+    .filter(tool => TOOL_REGISTRY[tool.key])
+    .map(tool => ({...tool, ...TOOL_REGISTRY[tool.key]}))
+})
 
 const handleLogin = async () => {
   error.value = ''
@@ -98,16 +106,6 @@ const handleLogin = async () => {
     password.value = ''
   } catch (e: any) {
     error.value = e.response?.data?.message || 'Login failed.'
-  } finally {
-    loading.value = false
-  }
-}
-
-const handleLogout = async () => {
-  loading.value = true
-  try {
-    await logout()
-    contextStore.setCurrentUser({username: null})
   } finally {
     loading.value = false
   }

@@ -35,6 +35,7 @@ class TestConfigController:
         assert api_json['monsoonEnv'] == 'test'
         assert api_json['timezone'] == 'America/Los_Angeles'
         assert api_json['tenantSlug'] is None
+        assert api_json['availableTools'] == []
 
         api_json_lower_string = str(api_json).lower()
         for keyword in ('password', 'secret'):
@@ -45,6 +46,12 @@ class TestConfigController:
         response = client.get('/api/config', headers={'Host': 'pahma.monsoon-test.example.com'})
         assert response.status_code == 200
         assert response.json['tenantSlug'] == 'pahma'
+
+    def test_available_tools_resolved_for_tenant(self, client):
+        """A resolved tenant's available tools are included in its config."""
+        response = client.get('/api/config', headers={'Host': 'pahma.monsoon-test.example.com'})
+        assert response.status_code == 200
+        assert response.json['availableTools'] == [{'key': 'bulk_media_uploader', 'name': 'Bulk Media Uploader'}]
 
     def test_tenant_slug_missing_for_apex_domain(self, client):
         """A request for the bare base domain (no subdomain) has no tenant."""

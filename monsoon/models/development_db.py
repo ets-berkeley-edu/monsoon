@@ -25,14 +25,14 @@ ENHANCEMENTS, OR MODIFICATIONS.
 from flask import current_app as app
 from monsoon import db, std_commit
 from monsoon.models.tenant import Tenant
+from monsoon.models.tool import Tool
 from sqlalchemy import text
 
 # The known museum tenants -- see the "Working with tenants locally" section of README.md.
-# Kept in sync with scripts/db/migrate/2026/20260924-MON-6/create_tenants_table.sql,
-# scripts/db/migrate/2026/20260930-MON-11/rename_botgarden_to_ucbg.sql (the production
-# migrations), and tests/fixtures/tenants.sql (the test fixture); all are expected to define
-# the same five tenants. Each tenant's CollectionSpace instance URL is constructed dynamically
-# (slug + COLLECTIONSPACE_BASE_DOMAIN) rather than stored -- see
+# Kept in sync with scripts/db/migrate/2026/20260924-MON-6/create_tenants_table.sql (the
+# production migration) and tests/fixtures/tenants.sql (the test fixture); all are expected to
+# define the same five tenants. Each tenant's CollectionSpace instance URL is constructed
+# dynamically (slug + COLLECTIONSPACE_BASE_DOMAIN) rather than stored -- see
 # monsoon/externals/collectionspace.py. Slugs are chosen to match CollectionSpace's own tenant
 # identifiers exactly (unlike the legacy cspace-webapps-common names) -- "ucbg" here is
 # "botgarden" (UC Botanical Garden) in the legacy implementation.
@@ -42,6 +42,13 @@ TENANTS = [
     ('pahma', 'Phoebe A. Hearst Museum of Anthropology'),
     ('ucbg', 'UC Botanical Garden'),
     ('ucjeps', 'University and Jepson Herbaria'),
+]
+
+# The tools manifest: each tool, and which tenant slugs can reach it. Kept in sync with
+# scripts/db/migrate/2026/20261001-MON-12/create_tools_tables.sql (the production migration)
+# and tests/fixtures/tools.sql (the test fixture).
+TOOLS = [
+    ('bulk_media_uploader', 'Bulk Media Uploader', [slug for slug, _name in TENANTS]),
 ]
 
 
@@ -55,7 +62,8 @@ def clear():
 def load(create_test_data=True):
     _load_schema()
     if create_test_data:
-        _create_tenants()
+        tenants_by_slug = _create_tenants()
+        _create_tools(tenants_by_slug)
     return db
 
 
@@ -67,5 +75,11 @@ def _load_schema():
 
 
 def _create_tenants():
-    for slug, name in TENANTS:
-        Tenant.create(slug=slug, name=name)
+    return {slug: Tenant.create(slug=slug, name=name) for slug, name in TENANTS}
+
+
+def _create_tools(tenants_by_slug):
+    for key, name, tenant_slugs in TOOLS:
+        tool = Tool.create(key=key, name=name)
+        for slug in tenant_slugs:
+            Tool.grant_to_tenant(tool, tenants_by_slug[slug])

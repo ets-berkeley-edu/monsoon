@@ -23,4 +23,6 @@
 
 -- Mirror image of schema.sql, for rebuilding a local dev or test database from scratch.
 
+DROP TABLE IF EXISTS tenant_tools;
+DROP TABLE IF EXISTS tools;
 DROP TABLE IF EXISTS tenants;

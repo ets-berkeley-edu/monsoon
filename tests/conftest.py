@@ -63,9 +63,10 @@ def db(app):
     development_db.load(create_test_data=False)
 
     fixtures_path = f"{app.config['BASE_DIR']}/tests/fixtures"
-    with open(f'{fixtures_path}/tenants.sql', 'r') as sql_file:
-        _db.session.execute(text(sql_file.read()))
-        std_commit(allow_test_environment=True)
+    for fixture_file in ('tenants.sql', 'tools.sql'):
+        with open(f'{fixtures_path}/{fixture_file}', 'r') as sql_file:
+            _db.session.execute(text(sql_file.read()))
+            std_commit(allow_test_environment=True)
 
     return _db
 
