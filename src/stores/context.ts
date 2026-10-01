@@ -7,13 +7,21 @@ export type MonsoonConfig = {
   timezone?: string
 }
 
+export type CurrentUser = {
+  username: string | null
+}
+
 export const useContextStore = defineStore('context', {
   state: () => ({
-    config: {} as MonsoonConfig
+    config: {} as MonsoonConfig,
+    currentUser: {username: null} as CurrentUser
   }),
   actions: {
     setConfig(config: MonsoonConfig) {
       this.config = config
+    },
+    setCurrentUser(currentUser: CurrentUser) {
+      this.currentUser = currentUser
     }
   }
 })

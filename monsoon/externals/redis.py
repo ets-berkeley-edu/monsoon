@@ -22,21 +22,46 @@ SOFTWARE AND ACCOMPANYING DOCUMENTATION, IF ANY, PROVIDED HEREUNDER IS PROVIDED
 "AS IS". REGENTS HAS NO OBLIGATION TO PROVIDE MAINTENANCE, SUPPORT, UPDATES,
 ENHANCEMENTS, OR MODIFICATIONS.
 """
-import os
+from fakeredis import FakeStrictRedis
+from flask import current_app as app
+import redis as redis_client
+import simplejson as json
 
-# Base directory for the application (one level up from this config file).
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+_redis_conn = None
 
-COLLECTIONSPACE_BASE_DOMAIN = 'cspace-test.example.com'
 
-INDEX_HTML = f'{BASE_DIR}/tests/static/test-index.html'
+def get_redis_conn():
+    global _redis_conn
+    if _redis_conn is None:
+        if app.config['REDIS_USE_FAKE_CLIENT']:
+            _redis_conn = FakeStrictRedis()
+        elif app.config['REDIS_PASSWORD']:
+            _redis_conn = redis_client.from_url(get_url())
+        else:
+            _redis_conn = redis_client.from_url(f"redis://{app.config['REDIS_HOST']}:{app.config['REDIS_PORT']}")
+    return _redis_conn
 
-LOGGING_LOCATION = 'STDOUT'
 
-REDIS_USE_FAKE_CLIENT = True
+def get_url():
+    return f"rediss://default:{app.config['REDIS_PASSWORD']}@{app.config['REDIS_HOST']}:{app.config['REDIS_PORT']}"
 
-SQLALCHEMY_DATABASE_URI = 'postgresql://monsoon:monsoon@localhost:5432/monsoon_test'
 
-TENANT_BASE_DOMAIN = 'monsoon-test.example.com'
+def store_json(key, value, expire_seconds=None):
+    conn = get_redis_conn()
+    conn.set(key, json.dumps(value))
+    if expire_seconds:
+        conn.expire(key, expire_seconds)
 
-TESTING = True
+
+def fetch_json(key):
+    value = get_redis_conn().get(key)
+    return None if value is None else json.loads(value)
+
+
+def touch_key(key, expire_seconds):
+    """Reset a key's TTL, e.g. to slide an active session's expiry forward on use."""
+    get_redis_conn().expire(key, expire_seconds)
+
+
+def delete_key(key):
+    get_redis_conn().delete(key)

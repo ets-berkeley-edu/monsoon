@@ -29,7 +29,18 @@ import os
 # Base directory for the application (one level up from this config file).
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
-# Minutes of inactivity before session cookie is destroyed.
+# A tenant's CollectionSpace instance URL is constructed as "<slug>.<base-domain>", not
+# stored -- see monsoon/externals/collectionspace.py:instance_url_for_slug(). This default is
+# the QA tier, used for local development and dev/qa deployments alike; override to
+# "collectionspace.org" in production's local config.
+COLLECTIONSPACE_BASE_DOMAIN = 'qa.collectionspace.org'
+
+# Verify TLS certs when calling a tenant's CollectionSpace instance. Only disable per-tenant,
+# in a local override, for a self-hosted/sandbox instance with a self-signed certificate.
+COLLECTIONSPACE_VERIFY_SSL = True
+
+# Minutes of inactivity before session cookie is destroyed. Also used as the TTL for a logged-in
+# user's CollectionSpace credential in Redis -- see monsoon/lib/auth.py.
 INACTIVE_SESSION_LIFETIME = 120
 
 # This "INDEX_HTML" default is good once deployed. See development.py for local configs.
@@ -40,6 +51,13 @@ LOGGING_FORMAT = '[%(asctime)s] - %(levelname)s: %(message)s [in %(pathname)s:%(
 LOGGING_LOCATION = 'monsoon.log'
 LOGGING_LEVEL = logging.DEBUG
 LOGGING_PROPAGATION_LEVEL = logging.WARN
+
+# Redis holds a logged-in user's CollectionSpace credential for the life of their session (see
+# monsoon/externals/redis.py, monsoon/lib/auth.py) -- never the Flask session cookie itself.
+REDIS_HOST = 'localhost'
+REDIS_PASSWORD = ''
+REDIS_PORT = 6379
+REDIS_USE_FAKE_CLIENT = False
 
 # Used to encrypt session cookie.
 SECRET_KEY = 'secret'

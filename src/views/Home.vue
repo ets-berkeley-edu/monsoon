@@ -14,16 +14,63 @@
           Reimplementation scaffolding for UC Berkeley's CollectionSpace web apps.
         </p>
         <p
-          v-if="config.monsoonEnv"
+          v-if="contextStore.config.monsoonEnv"
           class="text-body-2 text-medium-emphasis mt-6"
         >
-          Backend environment: <strong>{{ config.monsoonEnv }}</strong>
+          Backend environment: <strong>{{ contextStore.config.monsoonEnv }}</strong>
         </p>
         <p
-          v-if="config.tenantSlug"
+          v-if="contextStore.config.tenantSlug"
           class="text-body-2 text-medium-emphasis"
         >
-          Tenant: <strong>{{ config.tenantSlug }}</strong>
+          Tenant: <strong>{{ contextStore.config.tenantSlug }}</strong>
+        </p>
+
+        <v-card v-if="contextStore.config.tenantSlug" class="mt-8 mx-auto text-left" max-width="360">
+          <v-card-text v-if="contextStore.currentUser.username">
+            <p class="mb-4">
+              Logged in to CollectionSpace as <strong>{{ contextStore.currentUser.username }}</strong>.
+            </p>
+            <v-btn
+              color="primary"
+              variant="tonal"
+              :loading="loading"
+              @click="handleLogout"
+            >
+              Log out
+            </v-btn>
+          </v-card-text>
+          <v-card-text v-else>
+            <v-form @submit.prevent="handleLogin">
+              <v-text-field
+                v-model="username"
+                label="CollectionSpace username"
+                autocomplete="username"
+                required
+              />
+              <v-text-field
+                v-model="password"
+                label="CollectionSpace password"
+                type="password"
+                autocomplete="current-password"
+                required
+              />
+              <v-alert
+                v-if="error"
+                type="error"
+                density="compact"
+                class="mb-4"
+              >
+                {{ error }}
+              </v-alert>
+              <v-btn type="submit" color="primary" :loading="loading">
+                Log in
+              </v-btn>
+            </v-form>
+          </v-card-text>
+        </v-card>
+        <p v-else class="text-body-2 text-medium-emphasis mt-8">
+          Visit a museum subdomain (e.g. <code>pahma.localhost:8080</code>) to log in.
         </p>
       </v-col>
     </v-row>
@@ -31,7 +78,38 @@
 </template>
 
 <script lang="ts" setup>
+import {login, logout} from '@/api/auth'
+import {ref} from 'vue'
 import {useContextStore} from '@/stores/context'
 
-const config = useContextStore().config
+const contextStore = useContextStore()
+
+const username = ref('')
+const password = ref('')
+const error = ref('')
+const loading = ref(false)
+
+const handleLogin = async () => {
+  error.value = ''
+  loading.value = true
+  try {
+    const data = await login(username.value, password.value)
+    contextStore.setCurrentUser({username: data.username})
+    password.value = ''
+  } catch (e: any) {
+    error.value = e.response?.data?.message || 'Login failed.'
+  } finally {
+    loading.value = false
+  }
+}
+
+const handleLogout = async () => {
+  loading.value = true
+  try {
+    await logout()
+    contextStore.setCurrentUser({username: null})
+  } finally {
+    loading.value = false
+  }
+}
 </script>

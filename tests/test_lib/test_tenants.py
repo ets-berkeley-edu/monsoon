@@ -34,7 +34,7 @@ class TestResolveTenantSlug:
 
     def test_local_dev_domain_with_port(self):
         """A port on the Host header (as in local dev) doesn't confuse resolution."""
-        assert resolve_tenant_slug('botgarden.localhost:8080', 'localhost') == 'botgarden'
+        assert resolve_tenant_slug('ucbg.localhost:8080', 'localhost') == 'ucbg'
 
     def test_is_case_insensitive(self):
         """Host headers are matched case-insensitively."""
